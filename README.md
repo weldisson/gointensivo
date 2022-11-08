@@ -19,8 +19,9 @@ go mod init github.com/weldisson/gointensivo
  . . . infra/ 
  . . . . database/ #database layer
  . . . . . order_repository.go 
- . usecase/ #usecase layer
- . . calculate_price.go
+ . . . usecase/ #usecase layer
+ . . . . calculate_price.go
+ . . . . get_total.go
 ```
 
 ### downloading external packages
