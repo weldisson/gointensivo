@@ -34,3 +34,10 @@ go mod tidy
 ```
 go test ./...
 ```
+
+### build app
+```
+go build cmd/consumer/main.go
+# or
+GOOS=windows go build cmd/consumer/main.go
+```
