@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -33,8 +34,31 @@ func main() {
 	out := make(chan amqp.Delivery) // channel
 	// gera uma tread consumindo a mensagem na thread 2 jogando para o channel acima.
 	go rabbitmq.Consume(ch, out) // T2
-	//imprime todas as mensagens enviadas
-	for msg := range out {
+
+	quantityWorkers := 150
+	// load balance
+	//quando é executado tem a quantidade de workers recebendo as mensagens do rabbitMQ de forma paralela
+	for i := 1; i < quantityWorkers; i++ {
+		go worker(out, &uc, i)
+	}
+	http.HandleFunc("/total", func(w http.ResponseWriter, r *http.Request) {
+		getTotalUC := usecase.GetTotalUseCase{OrderRepository: repository}
+		total, err := getTotalUC.Execute()
+		if err != nil {
+			// retorna error
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		}
+		json.NewEncoder(w).Encode(total)
+	})
+
+	http.ListenAndServe(":8080", nil) // chama o server HTTP, cria um thread.
+}
+
+// recebe a mensagem que vai ser entregue, use case e id
+func worker(deliveryMessage <-chan amqp.Delivery, uc *usecase.CalculateFinalPriceUseCase, workerID int) {
+	// imprime todas as mensagens enviadas
+	for msg := range deliveryMessage {
 		var inputDTO usecase.OrderInputDTO
 		// cada mensagem recebida no Body vai ser inserida no InputDTO
 		err := json.Unmarshal(msg.Body, &inputDTO)
@@ -49,7 +73,8 @@ func main() {
 		// retira a mensagem da fila
 		msg.Ack(false)
 		//printa a mensagem
-		fmt.Println(outputDTO)
+		fmt.Printf("Worker %d has processsed order %s\n", workerID, outputDTO.ID)
+		// aguarda 500 ms
 		time.Sleep(500 * time.Microsecond)
 	}
 }

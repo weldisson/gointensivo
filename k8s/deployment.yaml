@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  goconsumer
+  labels:
+    name:  goconsumer
+spec:
+  selector:
+    matchLabels:
+      app: goconsumer
+  template:
+    metadata:
+      labels:
+        app:  goconsumer
+    spec:
+      containers:
+      - image:  weldisson/gointensivo:latest
+        name:  goconsumer
+        ports:
+        - containerPort:  8080
